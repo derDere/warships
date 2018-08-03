@@ -112,6 +112,10 @@ def drawAndEnd(game, msg):
   
 
 def main(args):
+
+  s = Server()
+  
+
   global BLUE, RED, WHITE, GREEN, SHIP, HIT, LOG, logWin, myOc, opponentOc, game
   con = AiConnector()
   game = Game(con, draw)

@@ -2,6 +2,8 @@ from unicurses import *
 from main import *
 import datetime as dt
 import random as rnd
+import http.server
+import socketserver
 
 
 LEFT = ["a","KEY_LEFT"]
@@ -31,8 +33,20 @@ class AiConnector:
       return "O"
 
 
+class ServerHandler(http.server.SimpleHTTPRequestHandler):
+  def do_GET(self):
+    self.send_response(200)
+    self.send_header("Content-type", "text/plain")
+    self.end_headers()
+    self.wfile.write("test".encode())
+    print("tttt")
+
 class Server:
-  pass
+  def __init__(self):
+    self.port = 80
+    self.handler = ServerHandler
+    self.Server = socketserver.TCPServer(("", self.port), self.handler)
+    self.Server.serve_forever()
 
 
 class Client:
