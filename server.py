@@ -13,7 +13,6 @@ ENTER = ["e","\n"]
 QUIT = ["q"]
 
 
-<<<<<<< HEAD
 class AiConnector:
   def __init__(self):
     self.hits = []
@@ -30,7 +29,6 @@ class AiConnector:
       return "X"
     else:
       return "O"
->>>>>>> 8059dc810b01e9a1ed518a135b3cffab2cb286ac
 
 
 class Server:
