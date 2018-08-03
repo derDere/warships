@@ -12,6 +12,10 @@ ENTER = ["e","\n"]
 QUIT = ["q"]
 
 
+class AiOponent:
+  pass
+
+
 class Server:
   pass
 
