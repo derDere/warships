@@ -1,5 +1,6 @@
 from unicurses import *
 from unicguard import *
+from server import *
 import sys
 
 
@@ -9,12 +10,7 @@ WHITE = None
 GREEN = None
 SHIP = None
 HIT = None
-
-
-LOG_WIN = None
-def log(string):
-  global LOG_WIN
-  waddstr(LOG_WIN, str(string) + "\n")
+LOG = None
 
 
 class Ship:
@@ -82,8 +78,29 @@ class Ocean:
     box(self.win)
 
 
+myOc = None
+opponentOc = None
+game = None
+logWin = None
+
+
+def draw():
+  global WHITE, LOG, logWin, game, myOc, opponentOc
+  wbkgd(logWin, " ", color_pair(WHITE))
+  wmove(logWin, 0, 0)
+  for line in game.logs:
+    waddstr(logWin, "%s\n" % line, color_pair(LOG))
+  myOc.draw()
+  opponentOc.draw()
+  update_panels()
+  doupdate()
+  
+
 def main(args):
-  global BLUE, RED, WHITE, GREEN, SHIP, HIT, LOG_WIN
+  global BLUE, RED, WHITE, GREEN, SHIP, HIT, LOG, logWin, myOc, opponentOc, game
+  server = Server()
+  game = Game(server, draw)
+  
   with unicurses_guard() as stdscr:
     #Color Styles
     BLUE = new_style(COLOR_CYAN, COLOR_BLACK)
@@ -92,51 +109,45 @@ def main(args):
     GREEN = new_style(COLOR_BLACK, COLOR_GREEN)
     SHIP = new_style(COLOR_BLACK, COLOR_YELLOW)
     HIT = new_style(COLOR_RED, COLOR_YELLOW)
+    LOG = new_style(COLOR_GREEN, COLOR_BLACK)
     
     #LogWin
-    LOG_WIN = newwin(20,49,14,0)
-    logpan = new_panel(LOG_WIN)
+    logWin = newwin(20,49,14,0)
+    logpan = new_panel(logWin)
     
     #Ocean wins
     ocWin1 = newwin(13, 24, 0, 0)
     ocPan1 = new_panel(ocWin1)
-    oc1 = Ocean(ocWin1)
+    myOc = Ocean(ocWin1)
     ocWin2 = newwin(13, 24, 0, 25)
     ocPan2 = new_panel(ocWin2)
-    oc2 = Ocean(ocWin2)
-
-    #dev stuff
-    oc1.ships.append(Ship((1,1), (1,0), 4, 4))
-    oc2.target = [0,0]
+    opponentOc = Ocean(ocWin2)
     
-    #drawing
-    while 1:
-      oc1.draw()
-      oc2.draw()
-      update_panels()
-      doupdate()
-      k = getkey()
-      if k == "q":
-        break
-      elif k == "w" or k == "KEY_UP":
-        oc2.target[1] -= 1
-        if oc2.target[1] < 0:
-          oc2.target[1] = 0
-      elif k == "s" or k == "KEY_DOWN":
-        oc2.target[1] += 1
-        if oc2.target[1] >= 10:
-          oc2.target[1] = 9
-      elif k == "a" or k == "KEY_LEFT":
-        oc2.target[0] -= 1
-        if oc2.target[0] < 0:
-          oc2.target[0] = 0
-      elif k == "d" or k == "KEY_RIGHT":
-        oc2.target[0] += 1
-        if oc2.target[0] >= 10:
-          oc2.target[0] = 9
-      elif k == "\n":
-        oc1.hits.append(tuple(oc2.target))
-      log(oc1.hits)
+    game.place(myOc)
+    #old
+    #while 1:
+    #  k = getkey()
+    #  if k == "q":
+    #    break
+    #  elif k == "w" or k == "KEY_UP":
+    #    oc2.target[1] -= 1
+    #    if oc2.target[1] < 0:
+    #      oc2.target[1] = 0
+    #  elif k == "s" or k == "KEY_DOWN":
+    #    oc2.target[1] += 1
+    #    if oc2.target[1] >= 10:
+    #      oc2.target[1] = 9
+    #  elif k == "a" or k == "KEY_LEFT":
+    #    oc2.target[0] -= 1
+    #    if oc2.target[0] < 0:
+    #      oc2.target[0] = 0
+    #  elif k == "d" or k == "KEY_RIGHT":
+    #    oc2.target[0] += 1
+    #    if oc2.target[0] >= 10:
+    #      oc2.target[0] = 9
+    #  elif k == "\n":
+    #    oc1.hits.append(tuple(oc2.target))
+    #  log(oc1.hits)
     
 
 if __name__=="__main__":
