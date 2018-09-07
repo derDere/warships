@@ -1,6 +1,7 @@
 from unicurses import *
 from main import *
 import datetime as dt
+import random as rnd
 
 
 LEFT = ["a","KEY_LEFT"]
@@ -10,6 +11,24 @@ DOWN = ["s","KEY_DOWN"]
 ROTATE = ["r"," "]
 ENTER = ["e","\n"]
 QUIT = ["q"]
+
+
+class AiConnector:
+  def __init__(self):
+    self.hits = []
+
+  def checkOpponent(self):
+    v = rnd.randrange(1000)
+    if v % 3 == 0:
+      return (4,4)
+    return None
+  
+  def sendTarget(self, target):
+    x,y = target
+    if x % 2 == 0:
+      return "X"
+    else:
+      return "O"
 
 
 class Server:
@@ -37,6 +56,17 @@ shipTypes = {
 }
 
 
+maxHits = sum(shipTypes.values())
+
+
+def hitsLeft(oc):
+  hitCount = len([x for x in oc.hits if oc.hits[x] == "X"])
+  if hitCount < maxHits:
+    return True
+  else:
+    return False
+
+
 def addT(T1,T2):
   return tuple(sum(x) for x in zip(T1, T2))
 
@@ -48,6 +78,7 @@ class Game:
     self.logs = []
     self.logLength = 5
     self.Quit = False
+    self.lastTarget = [4,4]
   
   def place(self, oc):
     global UP, LEFT, RIGHT, DOWN, ROTATE, QUIT, ENTER
@@ -55,7 +86,7 @@ class Game:
     for shipI in shipTypes:
       currentShip = Ship((0,0),(1,0),shipTypes[shipI],shipI)
       oc.ships.append(currentShip)
-      self.log("Place warship #1")
+      self.log("Place warship #%d" % currentShip.index)
       shipPlaced = False
       while not shipPlaced:
         self.draw()
@@ -96,10 +127,60 @@ class Game:
         currentShip.calc()
   
   def turn(self, oc):
-    pass
+    global UP, LEFT, RIGHT, DOWN, ROTATE, QUIT, ENTER
+    self.log("choose your target...")
+    oc.target = self.lastTarget
+    choosen = False
+    while not choosen:
+      self.draw()
+      key = getkey()
+      if key in QUIT:
+        exit()
+      elif key in UP:
+        oc.target[1] -= 1
+        if oc.target[1] < 0:
+          oc.target[1] = 0
+      elif key in DOWN:
+        oc.target[1] += 1
+        if oc.target[1] >= 10:
+          oc.target[1] = 9
+      elif key in LEFT:
+        oc.target[0] -= 1
+        if oc.target[0] < 0:
+          oc.target[0] = 0
+      elif key in RIGHT:
+        oc.target[0] += 1
+        if oc.target[0] >= 10:
+          oc.target[0] = 9
+      elif key in ENTER:
+        choosen = True
+    self.lastTarget = oc.target
+    target = tuple(oc.target)
+    oc.target = None
+    hit = self.con.sendTarget(target)
+    oc.hits[target] = hit
+    if hit == "O":
+      self.log("You missed")
+    else:
+      self.log("You hit!")
   
   def wait(self, oc):
-    pass
+    self.log("Waiting for opponent...")
+    hit = None
+    while hit == None:
+      self.draw()
+      hit = self.con.checkOpponent()
+      if hit == None:
+        t.sleep(0.5)
+    hitType = "O"
+    for s in oc.ships:
+      if hit in s.points:
+        hitType = "X"
+        self.log("Opponent hit!")
+        break
+    if hitType == "O":
+      self.log("Opponent missed")
+    oc.hits[hit] = hitType
   
   def log(self, msg):
     now = dt.datetime.now()
