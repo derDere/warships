@@ -4,6 +4,7 @@ import datetime as dt
 import random as rnd
 import http.server
 import socketserver
+import threading
 
 
 LEFT = ["a","KEY_LEFT"]
@@ -33,19 +34,39 @@ class AiConnector:
       return "O"
 
 
-class ServerHandler(http.server.SimpleHTTPRequestHandler):
+class ServerHandler(http.server.BaseHTTPRequestHandler):
   def do_GET(self):
+    global currentServer
     self.send_response(200)
     self.send_header("Content-type", "text/plain")
     self.end_headers()
+    self.log(self.client_address)
     self.wfile.write("test".encode())
-    print("tttt")
+  
+  def log(self, msg):
+    global currentGame
+    currentGame.log(msg)
+  
+  def log_message(self,a,b,c,d):
+    self.log(a % (b,c,d))
+
+
+currentServer = None
+
 
 class Server:
   def __init__(self):
+    global currentServer
+    self.grid = {}
+    self.hits = None
     self.port = 80
     self.handler = ServerHandler
     self.Server = socketserver.TCPServer(("", self.port), self.handler)
+    self.worker = threading.Thread(target=self.work)
+    self.worker.start()
+    currentServer = self
+  
+  def work(self):
     self.Server.serve_forever()
 
 
@@ -85,14 +106,19 @@ def addT(T1,T2):
   return tuple(sum(x) for x in zip(T1, T2))
 
 
+currentGame = None
+
+
 class Game:
   def __init__(self, connector, draw):
+    global currentGame
     self.con = connector
     self.draw = draw
     self.logs = []
     self.logLength = 5
     self.Quit = False
     self.lastTarget = [4,4]
+    currentGame = self
   
   def place(self, oc):
     global UP, LEFT, RIGHT, DOWN, ROTATE, QUIT, ENTER
